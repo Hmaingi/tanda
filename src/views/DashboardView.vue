@@ -1,4 +1,4 @@
-<template>
+<template> 
   <div class="dashboard-layout">
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -29,50 +29,52 @@
       <main class="dashboard-body">
         <h1>Agent Dashboard</h1>
 
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <h3>Total Inventory</h3>
-            <p>{{ stats.totalItems }}</p>
+        <!-- Stats + Chart Row -->
+        <div class="stats-chart-row">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>Total Inventory</h3>
+              <p>{{ stats.totalItems }}</p>
+            </div>
+            <div class="stat-card warning">
+              <h3>Low Stock</h3>
+              <p>{{ stats.lowStock }}</p>
+            </div>
+            <div class="stat-card">
+              <h3>Pending Orders</h3>
+              <p>{{ stats.pendingOrders }}</p>
+            </div>
           </div>
-          <div class="stat-card warning">
-            <h3>Low Stock</h3>
-            <p>{{ stats.lowStock }}</p>
-          </div>
-          <div class="stat-card">
-            <h3>Pending Orders</h3>
-            <p>{{ stats.pendingOrders }}</p>
+
+          <div class="chart-container">
+            <apexchart
+              type="donut"
+              height="280"
+              :options="chartOptions"
+              :series="chartSeries"
+            />
           </div>
         </div>
 
-        <!-- Inventory Overview Chart -->
-        <div class="chart-container">
-          <apexchart
-            type="donut"
-            height="300"
-            :options="chartOptions"
-            :series="chartSeries"
-          />
-        </div>
+        <!-- Products Overview Row -->
+        <div class="products-row">
+          <div class="section">
+            <h2>Top Selling Products</h2>
+            <ul class="list">
+              <li v-for="p in topSelling" :key="p.id">
+                {{ p.name }} - {{ p.sales }} sold
+              </li>
+            </ul>
+          </div>
 
-        <!-- Top Selling Products -->
-        <div class="section">
-          <h2>Top Selling Products</h2>
-          <ul class="list">
-            <li v-for="p in topSelling" :key="p.id">
-              {{ p.name }} - {{ p.sales }} sold
-            </li>
-          </ul>
-        </div>
-
-        <!-- Dropping Sales Products -->
-        <div class="section">
-          <h2>Products with Dropping Sales</h2>
-          <ul class="list dropping">
-            <li v-for="p in droppingSales" :key="p.id">
-              {{ p.name }} - Down {{ p.dropPercent }}%
-            </li>
-          </ul>
+          <div class="section">
+            <h2>Products with Dropping Sales</h2>
+            <ul class="list dropping">
+              <li v-for="p in droppingSales" :key="p.id">
+                {{ p.name }} - Down {{ p.dropPercent }}%
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- Low Stock Alerts -->
@@ -93,7 +95,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Calendar from 'primevue/calendar'
 import defaultAvatar from '@/assets/default-avatar.png'
-import VueApexCharts from 'vue3-apexcharts'
+import ApexCharts from 'vue3-apexcharts'
 
 const router = useRouter()
 
@@ -127,7 +129,6 @@ const filteredLowStock = computed(() => {
   })
 })
 
-// Sample product data
 const topSelling = ref([
   { id: 1, name: 'Smartphone', sales: 120 },
   { id: 2, name: 'Headphones', sales: 85 },
@@ -139,12 +140,27 @@ const droppingSales = ref([
   { id: 2, name: 'Camera', dropPercent: 10 }
 ])
 
-// ApexCharts
-const chartSeries = ref([stats.value.lowStock, stats.value.pendingOrders, stats.value.totalItems])
+// Chart Data
+const chartSeries = ref([
+  stats.value.lowStock,
+  stats.value.pendingOrders,
+  stats.value.totalItems
+])
+
 const chartOptions = ref({
+  chart: {
+    type: 'donut'
+  },
   labels: ['Low Stock', 'Pending Orders', 'Total Inventory'],
   colors: ['#FF4560', '#FEB019', '#00E396'],
-  legend: { position: 'bottom' }
+  legend: { position: 'bottom' },
+  responsive: [{
+    breakpoint: 480,
+    options: {
+      chart: { width: 200 },
+      legend: { position: 'bottom' }
+    }
+  }]
 })
 
 function goToProfile() {
@@ -156,13 +172,22 @@ function restockItem(item) {
 }
 </script>
 
+<script>
+export default {
+  components: {
+    apexchart: ApexCharts,
+    Calendar
+  }
+}
+</script>
+
 <style scoped>
+
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
   font-family: 'Segoe UI', sans-serif;
   background-color: #f5f7fa;
-  flex-wrap: wrap;
 }
 .sidebar {
   width: 220px;
@@ -231,11 +256,17 @@ function restockItem(item) {
   object-fit: cover;
   border: 2px solid #2E5D9E;
 }
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+.stats-chart-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
   margin: 2rem 0;
+}
+.stats-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
 }
 .stat-card {
   background: white;
@@ -247,16 +278,26 @@ function restockItem(item) {
   border-left: 4px solid #FFC107;
 }
 .chart-container {
+  flex: 1;
+  min-width: 280px;
   background: white;
   padding: 1rem;
   border-radius: 8px;
-  margin-bottom: 2rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.products-row {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
 }
 .section {
+  flex: 1;
   background: white;
   padding: 1.5rem;
-  margin-bottom: 2rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
@@ -293,4 +334,5 @@ function restockItem(item) {
   border-radius: 4px;
   cursor: pointer;
 }
+
 </style>
