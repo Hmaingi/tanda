@@ -45,40 +45,40 @@
               <p>{{ stats.pendingOrders }}</p>
             </div>
           </div>
-
-          <div class="chart-container">
-            <apexchart
-              type="donut"
-              height="280"
-              :options="chartOptions"
-              :series="chartSeries"
-            />
-          </div>
         </div>
 
-        <!-- Products Overview Row -->
-        <div class="products-row">
-          <div class="section">
-            <h2>Top Selling Products</h2>
-            <ul class="list">
-              <li v-for="p in topSelling" :key="p.id">
-                {{ p.name }} - {{ p.sales }} sold
-              </li>
-            </ul>
-          </div>
-
-          <div class="section">
-            <h2>Products with Dropping Sales</h2>
-            <ul class="list dropping">
-              <li v-for="p in droppingSales" :key="p.id">
-                {{ p.name }} - Down {{ p.dropPercent }}%
-              </li>
-            </ul>
-          </div>
+        <!-- Inventory Overview Chart -->
+        <div class="chart-container">
+          <apexchart
+            type="donut"
+            height="300"
+            :options="chartOptions"
+            :series="chartSeries"
+          />
         </div>
 
-        <!-- Low Stock Alerts -->
-        <div v-if="filteredLowStock.length" class="alerts">
+        <!-- Top Selling Products -->
+        <div class="section">
+          <h2>Top Selling Products</h2>
+          <ul class="list">
+            <li v-for="p in topSelling" :key="p.id">
+              {{ p.name }} - {{ p.sales }} sold
+            </li>
+          </ul>
+        </div>
+
+        <!-- Dropping Sales Products -->
+        <div class="section">
+          <h2>Products with Dropping Sales</h2>
+          <ul class="list dropping">
+            <li v-for="p in droppingSales" :key="p.id">
+              {{ p.name }} - Down {{ p.dropPercent }}%
+            </li>
+          </ul>
+        </div>
+
+        <!-- Low Stock Alerts Card -->
+        <div v-if="filteredLowStock.length" class="card alerts-card">
           <h2>Low Stock Items</h2>
           <div class="alert-item" v-for="item in filteredLowStock" :key="item.id">
             {{ item.name }} ({{ item.quantity }} left)
@@ -140,13 +140,8 @@ const droppingSales = ref([
   { id: 2, name: 'Camera', dropPercent: 10 }
 ])
 
-// Chart Data
-const chartSeries = ref([
-  stats.value.lowStock,
-  stats.value.pendingOrders,
-  stats.value.totalItems
-])
-
+// ApexCharts
+const chartSeries = ref([stats.value.lowStock, stats.value.pendingOrders, stats.value.totalItems])
 const chartOptions = ref({
   chart: {
     type: 'donut'
@@ -168,16 +163,23 @@ function goToProfile() {
 }
 
 function restockItem(item) {
-  console.log('Restocking:', item.name)
-}
-</script>
+  // Ask user for restock amount
+  const amount = parseInt(prompt(`Enter restock quantity for ${item.name}:`), 10)
 
-<script>
-export default {
-  components: {
-    apexchart: ApexCharts,
-    Calendar
+  // If user cancels or enters invalid number, do nothing
+  if (isNaN(amount) || amount <= 0) {
+    alert("Invalid restock amount.")
+    return
   }
+
+  // Update the item quantity
+  item.quantity += amount
+
+  // Recalculate low stock count in stats
+  stats.value.lowStock = lowStockItems.value.filter(i => i.quantity < 5).length
+
+  // Show confirmation
+  alert(`${item.name} has been restocked by ${amount} units!`)
 }
 </script>
 
@@ -278,28 +280,23 @@ export default {
   border-left: 4px solid #FFC107;
 }
 .chart-container {
-  flex: 1;
-  min-width: 280px;
   background: white;
-  padding: 1rem;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.products-row {
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
   margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 .section {
-  flex: 1;
   background: white;
   padding: 1.5rem;
+  margin-bottom: 2rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.chart-card {
+  text-align: center;
+}
+.alerts-card {
+  background-color: #fff8f0;
 }
 .list {
   list-style: none;
@@ -312,12 +309,6 @@ export default {
 }
 .list.dropping li {
   color: red;
-}
-.alerts {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 .alert-item {
   display: flex;
